@@ -1,9 +1,10 @@
-import os
 import pandas as pd
 from fastapi import FastAPI, UploadFile, File
 from dotenv import load_dotenv
+from services.tts_services import generer_audio_mot
 
 load_dotenv()
+
 app = FastAPI()
 
 
@@ -57,3 +58,19 @@ async def upload_fichier(file: UploadFile = File(...)):
         }
     except Exception as e:
         return {"erreur": f"Impossible de lire le fichier: {str(e)}"}
+    
+@app.get("/test-tts/")
+async def tester_voix():
+    texte_test = "Bonjour Madame Vroman, voici votre première génération audio depuis OpenAI !"
+    
+    # On appelle notre service
+    resultat = generer_audio_mot(
+        texte=texte_test, 
+        voix="nova", 
+        nom_fichier="test_vroman.mp3"
+    )
+    
+    if resultat["succes"]:
+        return {"message": "Audio généré avec succès !", "fichier": resultat["chemin"]}
+    else:
+        return {"erreur": "La génération a échoué", "details": resultat["erreur"]}
