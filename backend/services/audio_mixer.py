@@ -3,10 +3,11 @@ import re
 from pathlib import Path
 from pydub import AudioSegment
 from services.tts_services import generer_audio_mot
+from services.metadata_services import ajouter_tags_mp3
 
 def assembler_paire_audio(chemin_audio_1: str, chemin_audio_2: str, duree_silence_sec: float, nom_fichier_sortie: str):
     """
-    Charge deux fichiers MP3, génère un silence de X secondes,
+    Charge deux fichiers MP3, génère un silence de X secondes,F
     assemble le tout et exporte le résultat.
     """
     try:
@@ -91,6 +92,11 @@ def creer_piste_complet(paire_mots: list, duree_silence_sec: float, fichier_sort
             if os.path.exists(fichier):
                 os.remove(fichier)
                 
+        ajouter_tags_mp3(
+            chemin_fichier=str(chemin_complet),
+            titre_lecon="Ma leçon de Japonais"
+        )
+        
         return {"succes": True, "chemin": str(chemin_complet)}
         
     except Exception as e:
