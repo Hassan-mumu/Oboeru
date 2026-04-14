@@ -80,7 +80,7 @@ async def tester_voix():
 @app.get("/test-audio-mixer/")
 async def texter_mixer():
     
-    chemin_test = "audios_generes/test_vroman.mp3"
+    chemin_test = "audio/test_vroman.mp3"
     
     if not os.path.exists(chemin_test):
         return {"erreur": "lefichier de base est introuvable"}

@@ -15,7 +15,7 @@ def generer_audio_mot(texte: str, voix: str = "nova", nom_fichier: str = "test.m
     """
     try:
         # On s'assure que le dossier de destination existe
-        dossier_audio = Path("audios_generes")
+        dossier_audio = Path("audio")
         dossier_audio.mkdir(exist_ok=True)
         
         chemin_complet = dossier_audio / nom_fichier

@@ -25,7 +25,7 @@ def assembler_paire_audio(chemin_audio_1: str, chemin_audio_2: str, duree_silenc
         audio_final = audio_source + silence + audio_traduction
 
         # 4. Sauvegarde
-        dossier_audio = Path("audios_generes")
+        dossier_audio = Path("audio")
         dossier_audio.mkdir(exist_ok=True)
         chemin_complet = dossier_audio / nom_fichier_sortie
 
@@ -51,7 +51,7 @@ def creer_piste_complet(paire_mots: list, duree_silence_sec: float, fichier_sort
     Génère l'audio complet de la leçon et nettoie les fichiers temporaires.
     """
     try:
-        dossier_audio = Path("audios_generes")
+        dossier_audio = Path("audio")
         dossier_audio.mkdir(exist_ok=True)
         
         piste_final = AudioSegment.empty()
