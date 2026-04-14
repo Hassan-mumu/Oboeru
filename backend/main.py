@@ -3,7 +3,7 @@ import pandas as pd
 from fastapi import FastAPI, UploadFile, File
 from dotenv import load_dotenv
 from services.tts_services import generer_audio_mot
-from services.audio_mixer import assembler_paire_audio
+from services.audio_mixer import assembler_paire_audio, creer_piste_complet
 
 load_dotenv()
 
@@ -80,7 +80,7 @@ async def tester_voix():
 @app.get("/test-audio-mixer/")
 async def texter_mixer():
     
-    chemin_test = "audios_generes/test_vroman.mp3"
+    chemin_test = "audio/test_vroman.mp3"
     
     if not os.path.exists(chemin_test):
         return {"erreur": "lefichier de base est introuvable"}
@@ -95,4 +95,24 @@ async def texter_mixer():
     if resultat["succes"]:
         return {'message': "Mixage réussi !", "fichier": resultat["chemin"]}
     else:
-        return {"erreur": "Le mixage a échoué", "details": resultat["erreur"]}    
+        return {"erreur": "Le mixage a échoué", "details": resultat["erreur"]}
+    
+@app.post("/test-pipeline-complet/")
+async def tester_pipeline_complet():
+    
+    data_test = [
+        {"source": "おはようございます", "traduction": "Bonjour (le matin)"},
+        {"source": "ありがとう", "traduction": "Merci"},
+        {"source": "さようなら", "traduction": "Au revoir"}
+    ]
+    
+    resultat = creer_piste_complet(
+        paire_mots=data_test,
+        duree_silence_sec=3.0,
+        fichier_sortie="leçon_japonaise.mp3"
+    )
+    
+    if resultat["succes"]:
+        return {"message" : "Leçon généré avec succès!", "fichier": resultat["chemin"]}
+    else:
+        return {"erreur" : "La génération à échoué", "fichier": resultat["erreur"]}
