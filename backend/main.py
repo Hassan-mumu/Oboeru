@@ -109,7 +109,7 @@ async def tester_pipeline_complet():
     resultat = creer_piste_complet(
         paire_mots=data_test,
         duree_silence_sec=3.0,
-        fichier_sortie="leçon_japonaise.mp3"
+        fichier_sortie="leçon_japonaise_v2.mp3"
     )
     
     if resultat["succes"]:
