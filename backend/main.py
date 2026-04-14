@@ -1,7 +1,9 @@
+import os
 import pandas as pd
 from fastapi import FastAPI, UploadFile, File
 from dotenv import load_dotenv
 from services.tts_services import generer_audio_mot
+from services.audio_mixer import assembler_paire_audio
 
 load_dotenv()
 
@@ -74,3 +76,23 @@ async def tester_voix():
         return {"message": "Audio généré avec succès !", "fichier": resultat["chemin"]}
     else:
         return {"erreur": "La génération a échoué", "details": resultat["erreur"]}
+    
+@app.get("/test-audio-mixer/")
+async def texter_mixer():
+    
+    chemin_test = "audios_generes/test_vroman.mp3"
+    
+    if not os.path.exists(chemin_test):
+        return {"erreur": "lefichier de base est introuvable"}
+    
+    resultat = assembler_paire_audio(
+        chemin_test,
+        chemin_test,
+        3.0,
+        "test_silence_3s.mp3"
+    )
+    
+    if resultat["succes"]:
+        return {'message': "Mixage réussi !", "fichier": resultat["chemin"]}
+    else:
+        return {"erreur": "Le mixage a échoué", "details": resultat["erreur"]}    
