@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from fastapi import FastAPI, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from services.tts_services import generer_audio_mot
 from services.audio_mixer import assembler_paire_audio, creer_piste_complet
@@ -9,6 +10,19 @@ load_dotenv()
 
 app = FastAPI()
 
+
+
+origines_autorises = [
+    os.getenv("FRONTEND_URL", "https://localhost:3000")
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_orgins=origines_autorises,    #ouvre l'accès à mon frontend(Next.js)
+    allow_credentials=True,             # Autorise le passage des cookies/sessions
+    allow_methods=["*"],                # Autorise toute les requetes (get, post, etc)
+    allow_headers=["*"],                # Autorise tous les en-tetes
+)
 
 @app.post("/upload/")
 async def upload_fichier(file: UploadFile = File(...)):
