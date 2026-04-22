@@ -18,7 +18,7 @@ origines_autorises = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_orgins=origines_autorises,    #ouvre l'accès à mon frontend(Next.js)
+    allow_origins=origines_autorises,    #ouvre l'accès à mon frontend(Next.js)
     allow_credentials=True,             # Autorise le passage des cookies/sessions
     allow_methods=["*"],                # Autorise toute les requetes (get, post, etc)
     allow_headers=["*"],                # Autorise tous les en-tetes
