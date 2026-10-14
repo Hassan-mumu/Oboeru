@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import VerificationDonnees from '@/src/features/importation/components/VerificationDonnees';
+import ParametresAudio from '@/src/features/importation/components/ParametresAudio';
 import { DonneesImportees } from '@/src/types/importation';
 
 export default function ConfigurationPage() {
@@ -30,16 +31,19 @@ export default function ConfigurationPage() {
     <main className="min-h-screen bg-gray-50 p-8 pt-20">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
         
-        {/* COLONNE DE GAUCHE : US-203 (et bientôt US-204) */}
+        {/* COLONNE DE GAUCHE */}
         <div className="space-y-6">
           <VerificationDonnees donnees={donnees} />
         </div>
 
         {/* COLONNE DE DROITE : En construction */}
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 opacity-50">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">2. Paramètres Audio</h2>
-            <p className="text-gray-500 italic">En construction...</p>
+          <ParametresAudio /> {/* <-- NOTRE NOUVEAU COMPOSANT EST ICI ! */}
+          
+          {/* Section 3 : Paramètres de sortie (La prochaine étape !) */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 opacity-50 mt-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">3. Paramètres de Sortie</h2>
+            <p className="text-gray-500 italic">Bouton de génération en construction...</p>
           </div>
         </div>
 
