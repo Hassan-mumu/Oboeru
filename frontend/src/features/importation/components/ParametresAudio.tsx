@@ -2,20 +2,30 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 
-export default function ParametresAudio() {
-  // États pour stocker les choix de l'utilisateur (avec des valeurs par défaut)
-  const [voix, setVoix] = useState<string>("nova");
-  const [volume, setVolume] = useState<number>(100);
-  const [vitesse, setVitesse] = useState<number>(110);
-  const [silence, setSilence] = useState<number>(3); // 3 secondes par défaut
+// 1. Définition des props attendues par le parent
+interface ParametresAudioProps {
+  voix: string;
+  setVoix: (val: string) => void;
+  volume: number;
+  setVolume: (val: number) => void;
+  vitesse: number;
+  setVitesse: (val: number) => void;
+  silence: number;
+  setSilence: (val: number) => void;
+}
 
-// États pour gérer l'état de lecture et chargement
+export default function ParametresAudio({
+  voix, setVoix,
+  volume, setVolume,
+  vitesse, setVitesse,
+  silence, setSilence
+}: ParametresAudioProps) {
+  
+  // 2. Les états purement locaux (UI du bouton) restent ici
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  
-  // Utilisation d'une référence pour conserver l'objet Audio d'un render à l'autre
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  // Fonction utilitaire pour calculer le pourcentage de remplissage
+
   const getProgressStyle = (value: number, min: number, max: number) => {
     const percentage = ((value - min) / (max - min)) * 100;
     return {
@@ -23,8 +33,7 @@ export default function ParametresAudio() {
     };
   };
 
-const handleTogglePlay = () => {
-    // Si on clique sur Pause alors qu'on est en train de lire
+  const handleTogglePlay = () => {
     if (isPlaying && audioRef.current) {
       audioRef.current.pause();
       setIsPlaying(false);
@@ -34,10 +43,8 @@ const handleTogglePlay = () => {
     if (isLoading) return;
     setIsLoading(true);
 
-    // Initialiser l'objet audio si ce n'est pas encore fait ou si la voix a changé
     const url = `http://localhost:8000/test-tts/?voix=${voix}`;
     
-    // On arrête l'ancienne instance si elle existait
     if (audioRef.current) {
       audioRef.current.pause();
     }
@@ -51,12 +58,10 @@ const handleTogglePlay = () => {
       audio.play();
     };
 
-    // Quand la lecture se termine naturellement, on remet l'icône sur Play
     audio.onended = () => {
       setIsPlaying(false);
     };
 
-    // Si une erreur survient
     audio.onerror = () => {
       setIsLoading(false);
       setIsPlaying(false);
@@ -64,7 +69,6 @@ const handleTogglePlay = () => {
     };
   };
 
-  // Sécurité : couper le son si le composant est détruit ou si on change de voix
   useEffect(() => {
     return () => {
       if (audioRef.current) {
@@ -93,7 +97,7 @@ const handleTogglePlay = () => {
           </select>
         </div>
 
-        <div className="h-px bg-gray-100 w-full"></div> {/* Séparateur visuel léger */}
+        <div className="h-px bg-gray-100 w-full"></div>
 
         {/* Curseur : Volume */}
         <div className="flex items-center gap-4">
@@ -141,6 +145,7 @@ const handleTogglePlay = () => {
           <span className="w-16 text-right text-gray-700 font-medium">{silence} sec</span>
         </div>
 
+        {/* Bouton d'aperçu */}
         <div className="flex items-center gap-3 pt-2">
           <button
             onClick={handleTogglePlay}
@@ -149,21 +154,14 @@ const handleTogglePlay = () => {
             aria-label={isPlaying ? "Pause l'aperçu" : "Écouter l'aperçu"}
           >
             {isLoading ? (
-              // Petit indicateur de chargement rotatif
               <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             ) : isPlaying ? (
-              // Icône Pause
-              <svg className="h-4.5 w-4.5 fill-current" viewBox="0 0 24 24">
-                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-              </svg>
+              <svg className="h-4.5 w-4.5 fill-current" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
             ) : (
-              // Icône Play
-              <svg className="h-4 w-4 fill-current ml-0.5" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
+              <svg className="h-4 w-4 fill-current ml-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             )}
           </button>
           <span className="text-sm font-medium text-gray-700">

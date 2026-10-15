@@ -1,18 +1,27 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 
-export default function ParametresSortie() {
-  // État local pour gérer l'activation/désactivation du choix de langue
-  const [utiliserTraduction, setUtiliserTraduction] = useState<boolean>(true);
+interface ParametresSortieProps {
+  utiliserTraduction: boolean;
+  setUtiliserTraduction: (val: boolean) => void;
+  langueTraduction: string;
+  setLangueTraduction: (val: string) => void;
+}
 
+export default function ParametresSortie({
+  utiliserTraduction,
+  setUtiliserTraduction,
+  langueTraduction,
+  setLangueTraduction
+}: ParametresSortieProps) {
   return (
     <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
       <h2 className="text-xl font-bold text-gray-900 mb-6">Paramètres de Sortie</h2>
 
       <div className="space-y-4">
         
-        {/* Ligne 1 : Case à cocher pour la traduction */}
+        {/* Case à cocher */}
         <div className="flex flex-col gap-4">
           <label className="flex items-center gap-3 cursor-pointer">
             <input
@@ -26,14 +35,17 @@ export default function ParametresSortie() {
             </span>
           </label>
 
-          {/* Sous-ligne : Choix de la langue de traduction (Désactivé si la case est cochée) */}
+          {/* Choix de la langue (bien grisé si la case est cochée) */}
           <div className="flex items-center gap-4 ml-8">
-            <label className={`text-sm ${utiliserTraduction ? 'text-gray-400' : 'text-gray-700'}`}>
+            <label className={`text-sm transition-colors ${utiliserTraduction ? 'text-gray-400' : 'text-gray-700'}`}>
               Langue de Traduction souhaitée :
             </label>
             <select
               disabled={utiliserTraduction}
-              className="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2a5b45] text-gray-700 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              value={langueTraduction}
+              onChange={(e) => setLangueTraduction(e.target.value)}
+              // Ajout de disabled:bg-gray-100 et disabled:text-gray-400 pour un effet grisé net
+              className="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2a5b45] text-gray-700 text-sm disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-all"
             >
               <option value="">[Sélectionner, ex: Français]</option>
               <option value="fr">Français</option>
@@ -44,7 +56,7 @@ export default function ParametresSortie() {
 
         <div className="h-px bg-gray-100 w-full"></div>
 
-        {/* Ligne 2 : Format de sortie */}
+        {/* Format de sortie */}
         <div className="flex items-center gap-6">
           <span className="text-gray-900 font-medium">Format de sortie :</span>
           
@@ -59,7 +71,6 @@ export default function ParametresSortie() {
             <span className="text-gray-700 text-sm">Audio (MP3)</span>
           </label>
 
-          {/* à revoire */}
           <label 
             className="flex items-center gap-2 cursor-not-allowed opacity-50" 
             title="Bientôt disponible dans une prochaine mise à jour"
