@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import VerificationDonnees from '@/src/features/importation/components/VerificationDonnees';
 import ParametresAudio from '@/src/features/importation/components/ParametresAudio';
+import ParametresSortie from '@/src/features/importation/components/ParametresSortie';
 import { DonneesImportees } from '@/src/types/importation';
 
 export default function ConfigurationPage() {
@@ -36,15 +37,11 @@ export default function ConfigurationPage() {
           <VerificationDonnees donnees={donnees} />
         </div>
 
-        {/* COLONNE DE DROITE : En construction */}
+        {/* COLONNE DE DROITE */}
         <div className="space-y-6">
-          <ParametresAudio /> {/* <-- NOTRE NOUVEAU COMPOSANT EST ICI ! */}
-          
-          {/* Section 3 : Paramètres de sortie (La prochaine étape !) */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 opacity-50 mt-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">3. Paramètres de Sortie</h2>
-            <p className="text-gray-500 italic">Bouton de génération en construction...</p>
-          </div>
+
+          <ParametresAudio /> 
+          <ParametresSortie />
         </div>
 
       </div>
