@@ -2,6 +2,7 @@ import os
 import pandas as pd
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from services.tts_services import generer_audio_mot
 from services.audio_mixer import assembler_paire_audio, creer_piste_complet
@@ -76,7 +77,23 @@ async def upload_fichier(file: UploadFile = File(...)):
         return {"erreur": f"Impossible de lire le fichier: {str(e)}"}
     
 @app.get("/test-tts/")
-async def tester_voix():
+async def tester_voix(voix: str = "nova", texte: str = "Ceci est un test de la voix sélectionnée pour votre leçon."):
+    """
+    Route dynamique pour tester la voix.
+    Accepte les paramètres dans l'URL, ex: /test-tts/?voix=alloy
+    """
+    # On appelle notre service avec les paramètres dynamiques
+    resultat = generer_audio_mot(
+        texte=texte, 
+        voix=voix, 
+        nom_fichier=f"apercu_{voix}.mp3" # On crée un nom dynamique
+    )
+    
+    if resultat["succes"]:
+        # On renvoie DIRECTEMENT le fichier MP3 en tant que média lisible par le navigateur
+        return FileResponse(resultat["chemin"], media_type="audio/mpeg")
+    else:
+        return {"erreur": "La génération a échoué", "details": resultat["erreur"]}
     texte_test = "Bonjour Madame Vroman, voici votre première génération audio depuis OpenAI !"
     
     # On appelle notre service

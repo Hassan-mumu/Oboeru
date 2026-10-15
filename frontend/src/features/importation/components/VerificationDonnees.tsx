@@ -27,17 +27,18 @@ export default function VerificationDonnees({ donnees }: VerificationDonneesProp
 
   return (
     <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-      <h2 className="text-xl font-bold text-gray-900 mb-6">1. Vérification des Données</h2>
+      <h2 className="text-xl font-bold text-gray-900 mb-6">Vérification des Données</h2>
       
       <div className="space-y-4 mb-8">
         {/* Nom du projet */}
         <div className="flex items-center gap-4">
           <label className="text-gray-900 font-medium w-1/4">Nom du projet :</label>
           <input 
-            type="text" 
+            type="text"
+            placeholder="Nom du projet"
             value={nomProjet}
             onChange={(e) => setNomProjet(e.target.value)}
-            className="flex-1 p-2 bg-slate-100 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2a5b45]"
+            className="flex-1 p-2 text-gray-500 bg-slate-100 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2a5b45]"
           />
         </div>
 
@@ -45,9 +46,13 @@ export default function VerificationDonnees({ donnees }: VerificationDonneesProp
         <p className="text-gray-900 font-medium">
           Type de fichier : <span className="font-normal text-gray-700">Excel</span>
         </p>
-        <p className="text-gray-900 font-medium">
+        <div className="flex items-center gap-2">
+           <p className="text-gray-900 font-medium">
           Total : <span className="font-normal text-gray-700">{donnees.donnees.length} mots/phrases</span>
-        </p>
+          </p>
+          
+        </div>
+       
       </div>
 
       {/* Le Tableau à DEUX colonnes fixes */}
