@@ -8,7 +8,7 @@ load_dotenv()
 # Le client OpenAI va automatiquement lire la clé OPENAI_API_KEY dans ton fichier .env
 client = OpenAI()
 
-def generer_audio_mot(texte: str, voix: str = "nova", nom_fichier: str = "test.mp3"):
+def generer_audio_mot(texte: str, voix: str = "nova", nom_fichier: str = "test.mp3", vitesse: float = 1.0):
     """
     Envoie un texte à OpenAI et sauvegarde le fichier audio généré.
     Voix recommandées : 'nova' (féminine, très naturelle) ou 'alloy' (neutre).
@@ -24,7 +24,8 @@ def generer_audio_mot(texte: str, voix: str = "nova", nom_fichier: str = "test.m
         reponse = client.audio.speech.create(
             model="tts-1",
             voice=voix,
-            input=texte
+            input=texte,
+            speed=vitesse
         )
 
         # On sauvegarde le flux binaire dans notre fichier MP3
