@@ -41,7 +41,7 @@ export default function ConfigurationPage() {
     setIsGenerating(true);
 
     const payload = {
-      lignes: donnees.lignes,
+      lignes: donnees.donnees,
       parametres_audio: { voix, volume, vitesse, silence },
       parametres_sortie: { utiliser_traduction: utiliserTraduction, langue_traduction: langueTraduction, format: "mp3" }
     };
