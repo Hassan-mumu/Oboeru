@@ -46,19 +46,21 @@ def nettoyer_texte(texte:str):
     
     return texte_propre
 
-def creer_piste_complet(lignes: list, voix: str, volume: int, vitesse: float, silence_sec: float, utiliser_trad: bool, fichier_sortie: str="lecon_complete.mp3"):
+# Dans audio_mixer.py, modifie uniquement la fonction creer_piste_complet :
+
+def creer_piste_complet(lignes: list, voix: str, volume: int, vitesse: float, silence_sec: float, utiliser_trad: bool, fichier_sortie: str="lecon_complete.mp3", callback_progression=None):
     try:
         dossier_audio = Path("audio")
         dossier_audio.mkdir(exist_ok=True)
         
         piste_final = AudioSegment.empty()
         silence_reflexion = AudioSegment.silent(duration=int(silence_sec * 1000))
-        silence_transition = AudioSegment.silent(duration=2000) # 2 sec entre chaque bloc
+        silence_transition = AudioSegment.silent(duration=2000)
         
         fichiers_temporaires = []
+        total_mots = len(lignes)
         
         for i, ligne in enumerate(lignes):
-            # On extrait dynamiquement les valeurs (Col 1 = Source, Col 2 = Traduction)
             valeurs = list(ligne.values())
             if len(valeurs) < 1:
                 continue
@@ -66,6 +68,11 @@ def creer_piste_complet(lignes: list, voix: str, volume: int, vitesse: float, si
             mot_source = nettoyer_texte(str(valeurs[0]))
             mot_trad = nettoyer_texte(str(valeurs[1])) if len(valeurs) > 1 else ""
             
+            # --- NOUVEAU : Envoi de la progression (de 0% à 80%) ---
+            if callback_progression:
+                pourcentage = int((i / total_mots) * 80)
+                callback_progression(pourcentage, f"Génération du mot {i+1}/{total_mots}...")
+
             temp_file_source = f"temp_src_{i}.mp3"
             res_source = generer_audio_mot(mot_source, voix, temp_file_source, vitesse)
             
@@ -74,11 +81,9 @@ def creer_piste_complet(lignes: list, voix: str, volume: int, vitesse: float, si
                 bloc = audio_source + silence_reflexion
                 fichiers_temporaires.append(res_source["chemin"])
                 
-                # Ajout de la traduction uniquement si la case est cochée et que le texte existe
                 if utiliser_trad and mot_trad:
                     temp_file_trad = f"temp_trad_{i}.mp3"
                     res_trad = generer_audio_mot(mot_trad, voix, temp_file_trad, vitesse)
-                    
                     if res_trad["succes"]:
                         audio_trad = AudioSegment.from_mp3(res_trad["chemin"])
                         bloc += audio_trad
@@ -89,7 +94,10 @@ def creer_piste_complet(lignes: list, voix: str, volume: int, vitesse: float, si
             else:
                 print(f"Erreur de génération pour la ligne {i}")
                 
-        # Ajustement du volume global
+        # --- NOUVEAU : Phase d'assemblage (80% à 90%) ---
+        if callback_progression:
+            callback_progression(85, "Assemblage et mixage final en cours...")
+
         if volume != 100:
             if volume == 0:
                 piste_final = piste_final - 100
@@ -97,22 +105,25 @@ def creer_piste_complet(lignes: list, voix: str, volume: int, vitesse: float, si
                 changement_db = 20 * math.log10(volume / 100.0)
                 piste_final = piste_final + changement_db
                 
-        # Exportation
         chemin_complet = dossier_audio / fichier_sortie
         piste_final.export(chemin_complet, format="mp3", bitrate="128k")
         
-        # Nettoyage des petits fichiers MP3
         for fichier in fichiers_temporaires:
             if os.path.exists(fichier):
                 os.remove(fichier)
                 
-        # Ajout des métadonnées (US-304)
-        ajouter_tags_mp3(
-            chemin_fichier=str(chemin_complet),
-            titre_lecon="Leçon Oboeru"
-        )
+        ajouter_tags_mp3(chemin_fichier=str(chemin_complet), titre_lecon="Leçon Oboeru")
         
+        # --- NOUVEAU : Terminé (100%) ---
+        if callback_progression:
+            callback_progression(100, "Leçon générée avec succès !")
+
         return {"succes": True, "chemin": str(chemin_complet)}
+        
+    except Exception as e:
+        if callback_progression:
+            callback_progression(100, f"Erreur : {str(e)}")
+        return {"succes": False, "erreur": str(e)}
         
     except Exception as e:
         return {"succes": False, "erreur": str(e)}
