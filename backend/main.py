@@ -1,5 +1,10 @@
 import os
 import pandas as pd
+import uuid
+import asyncio
+import json
+from fastapi import BackgroundTasks
+from fastapi.responses import StreamingResponse
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -154,18 +159,20 @@ async def tester_pipeline_complet():
         return {"erreur" : "La génération a échoué", "fichier": resultat["erreur"]}
 
 
-# ==========================================
-# 4. ROUTE DE GÉNÉRATION FINALE
-# ==========================================
-@app.post("/api/generer-lecon/")
-async def api_generer_lecon(payload: GenerationPayload):
-    """
-    Reçoit le gros paquet de données du Frontend, génère la leçon, et renvoie le fichier.
-    """
-    # Conversion de la vitesse (ex: 110% -> 1.1)
-    vitesse_ratio = payload.parametres_audio.vitesse / 100.0
+taches_actives = {}
+
+def tache_generation_arriere_plan(task_id: str, payload: GenerationPayload):
+    """Fonction exécutée en arrière-plan par FastAPI"""
     
-    # Appel à notre service mis à jour
+    # 1. On crée la fonction callback qui va mettre à jour le dictionnaire
+    def mettre_a_jour_statut(pourcentage: int, message: str):
+        taches_actives[task_id]["pourcentage"] = pourcentage
+        taches_actives[task_id]["message"] = message
+
+    vitesse_ratio = payload.parametres_audio.vitesse / 100.0
+    nom_fichier_final = f"Lecon_{task_id}.mp3"
+    
+    # 2. On lance la création complète en lui passant notre callback
     resultat = creer_piste_complet(
         lignes=payload.lignes,
         voix=payload.parametres_audio.voix,
@@ -173,11 +180,68 @@ async def api_generer_lecon(payload: GenerationPayload):
         vitesse=vitesse_ratio,
         silence_sec=payload.parametres_audio.silence,
         utiliser_trad=payload.parametres_sortie.utiliser_traduction,
-        fichier_sortie="Ma_Lecon_Oboeru.mp3"
+        fichier_sortie=nom_fichier_final,
+        callback_progression=mettre_a_jour_statut # <-- Magie ici !
     )
     
+    # 3. Quand c'est fini, on enregistre le résultat
+    taches_actives[task_id]["termine"] = True
     if resultat["succes"]:
-        # Retourne le fichier MP3 au Frontend pour téléchargement
-        return FileResponse(resultat["chemin"], media_type="audio/mpeg", filename="Ma_Lecon_Oboeru.mp3")
+        taches_actives[task_id]["chemin_fichier"] = resultat["chemin"]
     else:
-        return {"erreur": "La génération a échoué", "details": resultat["erreur"]}
+        taches_actives[task_id]["erreur"] = resultat["erreur"]
+
+
+# --- ROUTE A : Démarre la tâche et rend un numéro de ticket ---
+@app.post("/api/generer-lecon/")
+async def api_generer_lecon(payload: GenerationPayload, background_tasks: BackgroundTasks):
+    task_id = str(uuid.uuid4())[:8] # Création d'un ID unique court
+    
+    # Initialisation de l'état
+    taches_actives[task_id] = {
+        "pourcentage": 0,
+        "message": "Démarrage de la génération...",
+        "termine": False
+    }
+    
+    # FastAPI va lancer la génération en tâche de fond sans bloquer la réponse !
+    background_tasks.add_task(tache_generation_arriere_plan, task_id, payload)
+    
+    return {"task_id": task_id, "message": "Génération démarrée"}
+
+
+# --- ROUTE B : Le flux vidéo (SSE) de la barre de progression ---
+@app.get("/api/progression/{task_id}")
+async def flux_progression(task_id: str):
+    async def generateur_evenements():
+        while True:
+            # On récupère l'état actuel de la tâche
+            etat = taches_actives.get(task_id)
+            
+            if not etat:
+                yield f"data: {json.dumps({'erreur': 'Tâche introuvable'})}\n\n"
+                break
+                
+            # On l'envoie au Frontend au format SSE (Server-Sent Events)
+            yield f"data: {json.dumps(etat)}\n\n"
+            
+            if etat["termine"]:
+                break
+                
+            await asyncio.sleep(0.5) # On actualise toutes les demi-secondes
+
+    return StreamingResponse(generateur_evenements(), media_type="text/event-stream")
+
+
+# --- ROUTE C : Le téléchargement du fichier une fois à 100% ---
+@app.get("/api/telecharger/{task_id}")
+async def telecharger_lecon(task_id: str):
+    etat = taches_actives.get(task_id)
+    if not etat or not etat.get("termine"):
+        return {"erreur": "Fichier non prêt ou introuvable"}
+        
+    if "erreur" in etat:
+        return {"erreur": etat["erreur"]}
+        
+    chemin_fichier = etat["chemin_fichier"]
+    return FileResponse(chemin_fichier, media_type="audio/mpeg", filename="Ma_Lecon_Oboeru.mp3")
