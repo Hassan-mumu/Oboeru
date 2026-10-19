@@ -1,29 +1,49 @@
 "use client";
 
 import React, { useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, FileRejection } from 'react-dropzone'; // <-- Ajout de FileRejection
 import { CloudUpload } from 'lucide-react';
 
 interface DropzoneAreaProps {
   onFileUpload: (file: File) => void;
+  onError?: (errorMessage: string) => void; // <-- NOUVEAU : Prop pour envoyer l'erreur au parent
 }
 
-export default function DropzoneArea({ onFileUpload }: DropzoneAreaProps) {
+export default function DropzoneArea({ onFileUpload, onError }: DropzoneAreaProps) {
+  
+  // Fonction quand le fichier est valide
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       onFileUpload(acceptedFiles[0]);
     }
   }, [onFileUpload]);
 
+  // NOUVEAU : Fonction quand le fichier est refusé (mauvais format ou trop lourd)
+  const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
+    if (onError && fileRejections.length > 0) {
+      const erreur = fileRejections[0].errors[0];
+      
+      if (erreur.code === 'file-too-large') {
+        onError("Le fichier est trop volumineux. La taille maximale acceptée est de 5 Mo.");
+      } else if (erreur.code === 'file-invalid-type') {
+        onError("Format non supporté. Veuillez importer un fichier Excel (.xls, .xlsx) ou CSV/Texte.");
+      } else {
+        onError("Le fichier a été rejeté.");
+      }
+    }
+  }, [onError]);
+
   const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
     onDrop,
+    onDropRejected, // <-- NOUVEAU : On attache la fonction de rejet
     accept: {
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
       'application/vnd.ms-excel': ['.xls'],
       'text/csv': ['.csv'],
       'text/plain': ['.txt']
     },
-    maxFiles: 1
+    maxFiles: 1,
+    maxSize: 5 * 1024 * 1024 // <-- NOUVEAU : Limite fixée à 5 Mo (5 * 1024 * 1024 octets)
   });
 
   return (
@@ -52,9 +72,10 @@ export default function DropzoneArea({ onFileUpload }: DropzoneAreaProps) {
         Ou cliquez pour sélectionner
       </p>
 
+      {/* Le message visuel en cours de glissement reste très utile */}
       {isDragReject && (
         <p className="text-sm text-red-500 mt-4 font-medium px-4 py-2 bg-red-100 rounded-md">
-          Format non supporté. Veuillez utiliser un tableur ou du texte.
+          Format non supporté ou fichier trop lourd.
         </p>
       )}
     </div>

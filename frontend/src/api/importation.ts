@@ -16,19 +16,27 @@ export async function uploadExcelFile(file: File) {
     const response = await fetch(`${API_URL}/upload/`, {
       method: "POST",
       body: formData,
-        // Note : pas besoin de définir le Content-Type, le navigateur s'en charge automatiquement pour les FormData
+      // Note : pas besoin de définir le Content-Type, le navigateur s'en charge automatiquement pour les FormData
     });
 
+    // 1. On transforme directement la réponse en JSON pour pouvoir la lire
+    const data = await response.json();
+
+    // 2. Si le code HTTP n'est pas bon (ex: erreur 500 ou 422)
     if (!response.ok) {
-      throw new Error(`Erreur lors de l'envoi : ${response.status} ${response.statusText}`);
+      throw new Error(data.erreur || `Erreur lors de l'envoi : ${response.status} ${response.statusText}`);
     }
 
-    // On transforme la réponse JSON du backend en objet JavaScript
-    const data = await response.json();
+    // 3. NOUVEAU : Si FastAPI renvoie un HTTP 200 OK, mais avec une erreur logique (ex: fichier vide)
+    if (data.erreur) {
+      throw new Error(data.erreur);
+    }
+
+    // Si on arrive ici, c'est que tout est parfait !
     return data;
     
   } catch (error) {
     console.error("Erreur réseau ou serveur :", error);
-    throw error; // On renvoie l'erreur pour la traiter dans l'interface visuelle
+    throw error; // On renvoie l'erreur pour la traiter dans l'interface visuelle (page.tsx)
   }
 }
