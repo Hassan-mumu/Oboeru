@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import VerificationDonnees from '@/src/features/importation/components/VerificationDonnees';
 import ParametresAudio from '@/src/features/importation/components/ParametresAudio';
 import ParametresSortie from '@/src/features/importation/components/ParametresSortie';
-import { DonneesImportees } from '@/src/types/importationTypes';
+import { DonneesImportees } from '@/src/features/importation/types/DonneesImportees';
+import ModalChargement from '@/src/features/importation/components/ModalChargement';
+
 export default function ConfigurationPage() {
   const router = useRouter();
   const [donnees, setDonnees] = useState<DonneesImportees | null>(null);
@@ -35,10 +37,21 @@ export default function ConfigurationPage() {
     return () => clearTimeout(timer);
   }, [router]);
 
-  // génération finale
+  // --- NOUVEAUX ÉTATS POUR LA PROGRESSION ---
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [progression, setProgression] = useState(0);
+  const [messageProgression, setMessageProgression] = useState("");
+  const [erreurProgression, setErreurProgression] = useState<string | null>(null);
+
+  // --- NOUVELLE FONCTION DE GÉNÉRATION EN TEMPS RÉEL ---
   const handleGeneration = async () => {
     if (!donnees) return;
-    setIsGenerating(true);
+    
+    // 1. On ouvre la modale et on réinitialise les compteurs
+    setIsModalOpen(true);
+    setProgression(0);
+    setMessageProgression("Connexion au serveur...");
+    setErreurProgression(null);
 
     const payload = {
       lignes: donnees.donnees,
@@ -47,31 +60,52 @@ export default function ConfigurationPage() {
     };
 
     try {
-      // NOTE: Remplacer l'URL par la bonne route API quand elle existera côté FastAPI
-      const response = await fetch("http://localhost:8000/api/generer-lecon/", {
+      // 2. On demande un ticket au backend
+      const resDemande = await fetch("http://localhost:8000/api/generer-lecon/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) throw new Error("Erreur serveur");
+      if (!resDemande.ok) throw new Error("Impossible de démarrer la génération.");
+      const { task_id } = await resDemande.json();
 
-      // Logique pour télécharger le MP3 généré
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "Ma_Lecon_Oboeru.mp3";
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // 3. On se branche sur le canal SSE pour écouter l'avancement
+      const eventSource = new EventSource(`http://localhost:8000/api/progression/${task_id}`);
 
-    } catch (error) {
-      console.error(error);
-      alert("Une erreur est survenue lors de la génération. (Le backend est-il configuré ?)");
-    } finally {
-      setIsGenerating(false);
+      // À chaque fois que le backend "parle" :
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.erreur) {
+          setErreurProgression(data.erreur);
+          eventSource.close(); // On coupe la radio en cas d'erreur
+          return;
+        }
+
+        // On met à jour la barre !
+        setProgression(data.pourcentage);
+        setMessageProgression(data.message);
+
+        // 4. Si c'est à 100%, on télécharge le fichier
+        if (data.termine) {
+          eventSource.close(); // On coupe la connexion, c'est fini
+          
+          if (!data.erreur) {
+            // Astuce pour lancer le téléchargement automatiquement
+            window.location.href = `http://localhost:8000/api/telecharger/${task_id}`;
+          }
+        }
+      };
+
+      // Si la connexion coupe inopinément
+      eventSource.onerror = () => {
+        setErreurProgression("La connexion avec le serveur a été perdue.");
+        eventSource.close();
+      };
+
+    } catch (error: any) {
+      setErreurProgression(error.message);
     }
   };
 
@@ -129,6 +163,18 @@ export default function ConfigurationPage() {
         </div>
 
       </div>
+      <ModalChargement 
+        isOpen={isModalOpen}
+        pourcentage={progression}
+        message={messageProgression}
+        erreur={erreurProgression}
+        onFermer={() => {
+          setIsModalOpen(false);
+          if (progression === 100 && !erreurProgression) {
+             router.push('/'); // Retour à l'accueil si c'est un succès
+          }
+        }}
+      />
     </main>
   );
 }
